@@ -5,8 +5,9 @@ import (
 	"fmt"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
+	"github.com/goryszewski/autok8s-CSI-libvirtApi/pkg/iscsi"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/internal/status"
+	"google.golang.org/grpc/status"
 )
 
 func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
@@ -29,6 +30,7 @@ func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 		Name:         req.Name,
 		SizeGigaByte: sizeByte / (1024 * 1024 * 1024),
 	}
+	fmt.Println(volReq)
 
 	return nil, nil
 }
