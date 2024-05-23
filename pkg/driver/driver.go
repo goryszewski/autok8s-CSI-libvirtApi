@@ -58,6 +58,6 @@ func (d *Driver) Run() error {
 	d.srv = grpc.NewServer()
 
 	csi.RegisterNodeServer(d.srv, d)
-
+	csi.RegisterControllerServer(d.srv, d)
 	return nil
 }
