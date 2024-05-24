@@ -59,5 +59,7 @@ func (d *Driver) Run() error {
 
 	csi.RegisterNodeServer(d.srv, d)
 	csi.RegisterControllerServer(d.srv, d)
+	csi.RegisterIdentityServer(d.srv, d)
+
 	return nil
 }
