@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"os"
 	"path"
 	"path/filepath"
 
@@ -50,6 +51,10 @@ func (d *Driver) Run() error {
 		grpcAddress = filepath.FromSlash(url.Path)
 	}
 
+	if err = os.Remove(grpcAddress); err != nil && os.IsExist(err) {
+		return fmt.Errorf("error remove sock: %s", err)
+	}
+
 	listener, e := net.Listen(url.Scheme, grpcAddress)
 	if e != nil {
 		return fmt.Errorf("problem with net.Listen: %s", e)
@@ -61,5 +66,5 @@ func (d *Driver) Run() error {
 	csi.RegisterControllerServer(d.srv, d)
 	csi.RegisterIdentityServer(d.srv, d)
 
-	return nil
+	return d.srv.Serve(listener) // blocking call
 }

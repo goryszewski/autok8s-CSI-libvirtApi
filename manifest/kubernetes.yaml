@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: csi-libvirt-deployment
+  labels:
+    app: csi-libvirt
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: csi-libvirt
+  template:
+    metadata:
+      labels:
+        app: csi-libvirt
+    spec:
+      containers:
+        - name: external-provisioner
+          image: registry.k8s.io/sig-storage/csi-provisioner:v5.0.0
+          args:
+            - "--csi-address=$(CSI_ENDPOINT)"
+          env:
+            - name: "CSI_ENDPOINT"
+              value: "unix:///sock/csi.sock"
+          volumeMounts:
+            - mountPath: /sock
+              name: sock-volume
+
+        - name: csi-libvirt
+          image: repo.internal:5000/csi-libvirt:latest
+          args: 
+            - "--endpoint=$(CSI_ENDPOINT)"
+          env:
+            - name: "CSI_ENDPOINT"
+              value: "unix:///sock/csi.sock"
+          volumeMounts:
+            - mountPath: /sock
+              name: sock-volume
+
+  volumes:
+  - name: sock-volume
+    emptyDir: {}
