@@ -19,6 +19,8 @@ type Driver struct {
 	endpoint string
 
 	srv *grpc.Server
+
+	ready bool
 }
 
 type InputParam struct {
@@ -65,6 +67,6 @@ func (d *Driver) Run() error {
 	csi.RegisterNodeServer(d.srv, d)
 	csi.RegisterControllerServer(d.srv, d)
 	csi.RegisterIdentityServer(d.srv, d)
-
+	d.ready = true
 	return d.srv.Serve(listener) // blocking call
 }
