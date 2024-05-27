@@ -13,12 +13,20 @@ metadata:
   name: libvirt-sa-cluster-role
 rules:
 - apiGroups: [""]
-  resources: ["persistentvolumeclaims"]
-  verbs: ["list"]
+  resources: 
+    - "persistentvolumeclaims"
+    - "persistentvolume"
+  verbs: 
+    - "list"
+    - "watch"
 
 - apiGroups: ["storage.k8s.io"]
-  resources: ["volumeattachments","storageclasses"]
-  verbs: ["list"]
+  resources: 
+    - "volumeattachments"
+    - "storageclasses"
+  verbs:
+    - "list"
+    - "watch"
 
 ---
 
