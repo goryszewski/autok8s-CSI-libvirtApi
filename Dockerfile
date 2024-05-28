@@ -1,13 +1,15 @@
-# build Stage
-FROM go as builder 
+FROM golang:1.22.0 as builder
 
-# COPY
+WORKDIR /app
 
-# Compile
+COPY . .
 
-# Run stage
-FROM alpine as runner
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o csi-libvirt ./main.go
 
-# COPY
+FROM alpine:3.6
 
-# entrypoint
+WORKDIR /app
+
+COPY --from=builder /app/csi-libvirt /app/csi-libvirt
+
+ENTRYPOINT ["/app/csi-libvirt"]

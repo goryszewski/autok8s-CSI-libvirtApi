@@ -75,7 +75,7 @@ spec:
               name: sock-volume
 
         - name: csi-libvirt
-          image: repo.internal:5000/csi-libvirt:latest
+          image: repo.mgmt.autok8s.ext:5000/csi-libvirt:latest
           args: 
             - "--endpoint=$(CSI_ENDPOINT)"
           env:
@@ -85,6 +85,6 @@ spec:
             - mountPath: /sock
               name: sock-volume
 
-  volumes:
-  - name: sock-volume
-    emptyDir: {}
+      volumes:
+      - name: sock-volume
+        emptyDir: {}
