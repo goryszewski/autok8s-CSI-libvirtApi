@@ -15,7 +15,7 @@ rules:
 - apiGroups: [""]
   resources: 
     - "persistentvolumeclaims"
-    - "persistentvolume"
+    - "persistentvolumes"
   verbs: 
     - "list"
     - "watch"
