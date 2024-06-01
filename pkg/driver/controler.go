@@ -2,11 +2,34 @@ package driver
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/internal/status"
 )
 
-func (d *Driver) CreateVolume(context.Context, *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
+func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
+	fmt.Println("CreateVolume called")
+	// fmt.Printf("req: [%+v] \n", *req)
+	// req: [{Name:pvc-5c8397b5-1e68-434a-8ab0-635dad53ce73 CapacityRange:required_bytes:1073741824  VolumeCapabilities:[mount:<> access_mode:<mode:SINGLE_NODE_WRITER > ] Parameters:map[] Secrets:map[] VolumeContentSource:<nil> AccessibilityRequirements:<nil> MutableParameters:map[] XXX_NoUnkeyedLiteral:{} XXX_unrecognized:[] XXX_sizecache:0}]
+	if req.Name == "" {
+		return nil, status.Error(codes.InvalidArgument, "CreateVolume - Expect name")
+	}
+
+	var sizeByte int64 = req.CapacityRange.GetLimitBytes()
+
+	if req.VolumeCapabilities == nil || len(req.VolumeCapabilities) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "CreateVolume - Expect VolumeCapabilities")
+	}
+
+	// DOTO request to iscsi client/api
+
+	volReq := iscsi.VolumeCreateRequest{
+		Name:         req.Name,
+		SizeGigaByte: sizeByte / (1024 * 1024 * 1024),
+	}
+
 	return nil, nil
 }
 func (d *Driver) DeleteVolume(context.Context, *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
