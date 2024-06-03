@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
+	"github.com/goryszewski/autok8s-CSI-libvirtApi/pkg/iscsi"
 	"google.golang.org/grpc"
 )
 
@@ -18,9 +19,9 @@ type Driver struct {
 	name     string
 	endpoint string
 
-	srv *grpc.Server
-
-	ready bool
+	srv     *grpc.Server
+	storage *iscsi.StorageService
+	ready   bool
 }
 
 type InputParam struct {
@@ -28,11 +29,13 @@ type InputParam struct {
 	Endpoint string
 }
 
-func NewDriver(params InputParam) *Driver {
+func NewDriver(params InputParam) (*Driver, error) {
+
 	return &Driver{
 		name:     params.Name,
 		endpoint: params.Endpoint,
-	}
+		storage:  iscsi.NewIscsi(),
+	}, nil
 }
 
 func (d *Driver) Run() error {

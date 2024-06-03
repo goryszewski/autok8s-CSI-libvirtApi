@@ -16,7 +16,11 @@ func main() {
 
 	fmt.Println(*endpoint)
 
-	drv := driver.NewDriver(driver.InputParam{Endpoint: *endpoint, Name: driver.Name})
+	drv, err := driver.NewDriver(driver.InputParam{Endpoint: *endpoint, Name: driver.Name})
+
+	if err != nil {
+		fmt.Println("Error load driver", err.Error())
+	}
 
 	if err := drv.Run(); err != nil {
 		fmt.Println(err)

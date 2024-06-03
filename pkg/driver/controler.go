@@ -32,7 +32,17 @@ func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 	}
 	fmt.Println(volReq)
 
-	return nil, nil
+	vol, err := d.storage.CreateVolume(&volReq)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "Failed provisioning volume")
+	}
+
+	return &csi.CreateVolumeResponse{
+		Volume: &csi.Volume{
+			CapacityBytes: sizeByte,
+			VolumeId:      vol.Id,
+		},
+	}, nil
 }
 func (d *Driver) DeleteVolume(context.Context, *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
 	return nil, nil

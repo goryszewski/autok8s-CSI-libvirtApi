@@ -5,6 +5,18 @@ type VolumeCreateRequest struct {
 	SizeGigaByte int64
 }
 
-func NewIscsi() VolumeCreateRequest {
-	return VolumeCreateRequest{}
+type Volume struct {
+	Id string
+}
+
+type StorageService struct{}
+
+func NewIscsi() *StorageService {
+	return &StorageService{}
+}
+
+func (d *StorageService) CreateVolume(*VolumeCreateRequest) (*Volume, error) {
+	return &Volume{
+		Id: "1",
+	}, nil
 }
