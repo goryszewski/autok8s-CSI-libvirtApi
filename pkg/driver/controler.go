@@ -30,7 +30,7 @@ func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 		Name:         req.Name,
 		SizeGigaByte: sizeByte / (1024 * 1024 * 1024),
 	}
-	fmt.Println(volReq)
+	fmt.Printf("[DEBUG][DeleteVolume] %+v \n", volReq)
 
 	vol, err := d.storage.CreateVolume(&volReq)
 	if err != nil {
@@ -44,8 +44,9 @@ func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 		},
 	}, nil
 }
-func (d *Driver) DeleteVolume(context.Context, *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
-	return nil, nil
+func (d *Driver) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
+	fmt.Printf("[DEBUG][DeleteVolume] %+v \n", req)
+	return &csi.DeleteVolumeResponse{}, nil
 }
 func (d *Driver) ControllerPublishVolume(context.Context, *csi.ControllerPublishVolumeRequest) (*csi.ControllerPublishVolumeResponse, error) {
 	return nil, nil
