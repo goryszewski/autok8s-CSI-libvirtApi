@@ -5,6 +5,10 @@ type VolumeCreateRequest struct {
 	SizeGigaByte int64
 }
 
+type VolumeDeleteRequest struct {
+	Id string
+}
+
 type Volume struct {
 	Id string
 }
@@ -19,4 +23,7 @@ func (d *StorageService) CreateVolume(*VolumeCreateRequest) (*Volume, error) {
 	return &Volume{
 		Id: "1",
 	}, nil
+}
+func (d *StorageService) DeleteVolume(*VolumeDeleteRequest) error {
+	return nil
 }

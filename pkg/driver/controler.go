@@ -46,6 +46,14 @@ func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 }
 func (d *Driver) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
 	fmt.Printf("[DEBUG][DeleteVolume] %+v \n", req)
+	volReq := iscsi.VolumeDeleteRequest{
+		Id: req.VolumeId,
+	}
+
+	err := d.storage.DeleteVolume(&volReq)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "Failed Delete volume")
+	}
 	return &csi.DeleteVolumeResponse{}, nil
 }
 func (d *Driver) ControllerPublishVolume(context.Context, *csi.ControllerPublishVolumeRequest) (*csi.ControllerPublishVolumeResponse, error) {
