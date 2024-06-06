@@ -11,7 +11,7 @@ import (
 )
 
 func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
-	fmt.Println("CreateVolume called")
+	fmt.Printf("[DEBUG][CreateVolume] called")
 	// fmt.Printf("req: [%+v] \n", *req)
 	// req: [{Name:pvc-5c8397b5-1e68-434a-8ab0-635dad53ce73 CapacityRange:required_bytes:1073741824  VolumeCapabilities:[mount:<> access_mode:<mode:SINGLE_NODE_WRITER > ] Parameters:map[] Secrets:map[] VolumeContentSource:<nil> AccessibilityRequirements:<nil> MutableParameters:map[] XXX_NoUnkeyedLiteral:{} XXX_unrecognized:[] XXX_sizecache:0}]
 	if req.Name == "" {
@@ -19,18 +19,16 @@ func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 	}
 
 	var sizeByte int64 = req.CapacityRange.GetLimitBytes()
-
+	fmt.Printf("[DEBUG][CreateVolume][req.CapacityRange.GetLimitBytes()] %+v \n", sizeByte)
 	if req.VolumeCapabilities == nil || len(req.VolumeCapabilities) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "CreateVolume - Expect VolumeCapabilities")
 	}
-
-	// DOTO request to iscsi client/api
 
 	volReq := iscsi.VolumeCreateRequest{
 		Name:         req.Name,
 		SizeGigaByte: sizeByte / (1024 * 1024 * 1024),
 	}
-	fmt.Printf("[DEBUG][DeleteVolume] %+v \n", volReq)
+	fmt.Printf("[DEBUG][CreateVolume][VolumeCreateRequest] %+v \n", volReq)
 
 	vol, err := d.storage.CreateVolume(&volReq)
 	if err != nil {
@@ -45,15 +43,19 @@ func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 	}, nil
 }
 func (d *Driver) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
-	fmt.Printf("[DEBUG][DeleteVolume] %+v \n", req)
+	fmt.Printf("[DEBUG][DeleteVolume][*csi.DeleteVolumeRequest] %+v \n", req)
+
 	volReq := iscsi.VolumeDeleteRequest{
 		Id: req.VolumeId,
 	}
+
+	fmt.Printf("[DEBUG][DeleteVolume][*iscsi.VolumeDeleteRequest] %+v \n", volReq)
 
 	err := d.storage.DeleteVolume(&volReq)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "Failed Delete volume")
 	}
+
 	return &csi.DeleteVolumeResponse{}, nil
 }
 func (d *Driver) ControllerPublishVolume(context.Context, *csi.ControllerPublishVolumeRequest) (*csi.ControllerPublishVolumeResponse, error) {
