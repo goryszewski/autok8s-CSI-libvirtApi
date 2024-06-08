@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-
+	fmt.Println("Start 001")
 	var (
 		endpoint = flag.String("endpoint", "default", "Endpoint gRPC")
 	)

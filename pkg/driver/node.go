@@ -2,6 +2,8 @@ package driver
 
 import (
 	"context"
+	"fmt"
+	"io/ioutil"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
 )
@@ -27,6 +29,16 @@ func (d *Driver) NodeExpandVolume(context.Context, *csi.NodeExpandVolumeRequest)
 func (d *Driver) NodeGetCapabilities(context.Context, *csi.NodeGetCapabilitiesRequest) (*csi.NodeGetCapabilitiesResponse, error) {
 	return nil, nil
 }
-func (d *Driver) NodeGetInfo(context.Context, *csi.NodeGetInfoRequest) (*csi.NodeGetInfoResponse, error) {
-	return nil, nil
+func (d *Driver) NodeGetInfo(ctx context.Context, req *csi.NodeGetInfoRequest) (*csi.NodeGetInfoResponse, error) {
+	fmt.Printf("[DEBUG][NodeGetInfo][*csi.NodeGetInfoRequest] %+v \n", req)
+	nodeID, _ := ioutil.ReadFile("id")
+	return &csi.NodeGetInfoResponse{
+		NodeId:            string(nodeID),
+		MaxVolumesPerNode: 5,
+		AccessibleTopology: &csi.Topology{
+			Segments: map[string]string{
+				"region": "local",
+			},
+		},
+	}, nil
 }

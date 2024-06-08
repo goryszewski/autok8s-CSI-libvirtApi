@@ -28,6 +28,7 @@ rules:
   resources: 
     - "volumeattachments"
     - "storageclasses"
+    - "csinodes"
   verbs:
     - "list"
     - "watch"
@@ -67,6 +68,18 @@ spec:
     spec:
       serviceAccountName: csi-libvirt-sa
       containers:
+        - name: external-attacher
+          image: registry.k8s.io/sig-storage/csi-attacher:v4.6.0
+          args:
+            - "--csi-address=$(CSI_ENDPOINT)"
+            - "-v=5"
+          env:
+            - name: "CSI_ENDPOINT"
+              value: "unix:///sock/csi.sock"
+          volumeMounts:
+            - mountPath: /sock
+              name: sock-volume
+
         - name: external-provisioner
           image: registry.k8s.io/sig-storage/csi-provisioner:v5.0.0
           args:
