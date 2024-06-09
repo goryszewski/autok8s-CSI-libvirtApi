@@ -31,7 +31,11 @@ func (d *Driver) NodeGetCapabilities(context.Context, *csi.NodeGetCapabilitiesRe
 }
 func (d *Driver) NodeGetInfo(ctx context.Context, req *csi.NodeGetInfoRequest) (*csi.NodeGetInfoResponse, error) {
 	fmt.Printf("[DEBUG][NodeGetInfo][*csi.NodeGetInfoRequest] %+v \n", req)
-	nodeID, _ := ioutil.ReadFile("id")
+	nodeID, err := ioutil.ReadFile("/id")
+	if err != nil {
+		fmt.Printf("[DEBUG][NodeGetInfo][ioutil.ReadFile(/id)] %+v \n", err)
+	}
+	fmt.Printf("[DEBUG][NodeGetInfo][nodeID] %v \n", string(nodeID))
 	return &csi.NodeGetInfoResponse{
 		NodeId:            string(nodeID),
 		MaxVolumesPerNode: 5,

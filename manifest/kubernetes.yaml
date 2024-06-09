@@ -27,9 +27,11 @@ rules:
 - apiGroups: ["storage.k8s.io"]
   resources: 
     - "volumeattachments"
+    - "volumeattachments/status"
     - "storageclasses"
     - "csinodes"
   verbs:
+    - "patch"
     - "list"
     - "watch"
 
