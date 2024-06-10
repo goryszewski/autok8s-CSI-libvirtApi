@@ -3,7 +3,8 @@ package driver
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"os"
+	"strings"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
 )
@@ -31,13 +32,16 @@ func (d *Driver) NodeGetCapabilities(context.Context, *csi.NodeGetCapabilitiesRe
 }
 func (d *Driver) NodeGetInfo(ctx context.Context, req *csi.NodeGetInfoRequest) (*csi.NodeGetInfoResponse, error) {
 	fmt.Printf("[DEBUG][NodeGetInfo][*csi.NodeGetInfoRequest] %+v \n", req)
-	nodeID, err := ioutil.ReadFile("/id")
+	nodeID, err := os.ReadFile("/id")
 	if err != nil {
-		fmt.Printf("[DEBUG][NodeGetInfo][ioutil.ReadFile(/id)] %+v \n", err)
+		fmt.Printf("[DEBUG][NodeGetInfo][os.ReadFile(/id)] %+v \n", err)
 	}
-	fmt.Printf("[DEBUG][NodeGetInfo][nodeID] %v \n", string(nodeID))
+	id := strings.ReplaceAll(string(nodeID), "\\n", "")
+	id = strings.ReplaceAll(id, "\n", "")
+	fmt.Printf("[DEBUG][NodeGetInfo][nodeID] %v \n", id)
+
 	return &csi.NodeGetInfoResponse{
-		NodeId:            string(nodeID),
+		NodeId:            id,
 		MaxVolumesPerNode: 5,
 		AccessibleTopology: &csi.Topology{
 			Segments: map[string]string{
