@@ -60,6 +60,20 @@ func (d *Driver) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest)
 }
 func (d *Driver) ControllerPublishVolume(ctx context.Context, req *csi.ControllerPublishVolumeRequest) (*csi.ControllerPublishVolumeResponse, error) {
 	fmt.Printf("[DEBUG][ControllerPublishVolume][*csi.ControllerPublishVolumeRequest] %+v \n", req)
+	if req.VolumeId == "" {
+		return nil, status.Error(codes.InvalidArgument, "VolumeID is mandatory")
+	}
+	if req.NodeId == "" {
+		return nil, status.Error(codes.InvalidArgument, "NodeId is mandatory")
+	}
+
+	_, err := d.storage.GetVolume(req.VolumeId)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "Error get Volume")
+	}
+
+	d.storage.Attach(req.VolumeId, req.NodeId)
+
 	return nil, nil
 }
 func (d *Driver) ControllerUnpublishVolume(ctx context.Context, req *csi.ControllerUnpublishVolumeRequest) (*csi.ControllerUnpublishVolumeResponse, error) {

@@ -1,5 +1,7 @@
 package iscsi
 
+import "fmt"
+
 type VolumeCreateRequest struct {
 	Name         string
 	SizeGigaByte int64
@@ -26,4 +28,12 @@ func (d *StorageService) CreateVolume(*VolumeCreateRequest) (*Volume, error) {
 }
 func (d *StorageService) DeleteVolume(*VolumeDeleteRequest) error {
 	return nil
+}
+
+func (d *StorageService) GetVolume(volumeId string) (*Volume, error) {
+	return &Volume{}, nil
+}
+
+func (d *StorageService) Attach(volID string, nodeid string) {
+	fmt.Printf("{DEBUG}{MOCK} [VOL_ID: %v] [nodeID: %v]", volID, nodeid)
 }
