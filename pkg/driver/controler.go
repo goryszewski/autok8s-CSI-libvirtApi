@@ -3,9 +3,9 @@ package driver
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
-	"github.com/goryszewski/autok8s-CSI-libvirtApi/pkg/iscsi"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -24,34 +24,24 @@ func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 		return nil, status.Error(codes.InvalidArgument, "CreateVolume - Expect VolumeCapabilities")
 	}
 
-	volReq := iscsi.VolumeCreateRequest{
-		Name:         req.Name,
-		SizeGigaByte: sizeByte / (1024 * 1024 * 1024),
-	}
-	fmt.Printf("[DEBUG][CreateVolume][VolumeCreateRequest] %+v \n", volReq)
-
-	vol, err := d.storage.CreateVolume(&volReq)
+	vol, err := d.storage.CreateDisk(8)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "Failed provisioning volume")
 	}
+	fmt.Printf("[DEBUG][CreateVolume][CreateDisk] %+v \n", vol)
 
 	return &csi.CreateVolumeResponse{
 		Volume: &csi.Volume{
 			CapacityBytes: sizeByte,
-			VolumeId:      vol.Id,
+			VolumeId:      strconv.Itoa(vol.ID),
 		},
 	}, nil
 }
 func (d *Driver) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
 	fmt.Printf("[DEBUG][DeleteVolume][*csi.DeleteVolumeRequest] %+v \n", req)
 
-	volReq := iscsi.VolumeDeleteRequest{
-		Id: req.VolumeId,
-	}
-
-	fmt.Printf("[DEBUG][DeleteVolume][*iscsi.VolumeDeleteRequest] %+v \n", volReq)
-
-	err := d.storage.DeleteVolume(&volReq)
+	id, _ := strconv.Atoi(req.VolumeId)
+	err := d.storage.DeleteDisk(id)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "Failed Delete volume")
 	}
@@ -67,29 +57,47 @@ func (d *Driver) ControllerPublishVolume(ctx context.Context, req *csi.Controlle
 		return nil, status.Error(codes.InvalidArgument, "NodeId is mandatory")
 	}
 
-	_, err := d.storage.GetVolume(req.VolumeId)
+	id, _ := strconv.Atoi(req.VolumeId)
+	err := d.storage.BindDisk(id, req.NodeId)
 	if err != nil {
-		return nil, status.Error(codes.Internal, "Error get Volume")
+		return nil, status.Error(codes.Internal, fmt.Sprintf("Error Internal: %v", err))
 	}
 
-	d.storage.Attach(req.VolumeId, req.NodeId)
-
-	return nil, nil
+	return &csi.ControllerPublishVolumeResponse{
+		PublishContext: map[string]string{
+			"libvirtCSI": req.VolumeId,
+		},
+	}, nil
 }
 func (d *Driver) ControllerUnpublishVolume(ctx context.Context, req *csi.ControllerUnpublishVolumeRequest) (*csi.ControllerUnpublishVolumeResponse, error) {
 	fmt.Printf("[DEBUG][ControllerUnpublishVolume][*csi.ControllerUnpublishVolumeRequest] %+v \n", req)
+	if req.VolumeId == "" {
+		return nil, status.Error(codes.InvalidArgument, "VolumeID is mandatory")
+	}
+	if req.NodeId == "" {
+		return nil, status.Error(codes.InvalidArgument, "NodeId is mandatory")
+	}
+	id, _ := strconv.Atoi(req.VolumeId)
+	err := d.storage.UnBindDisk(id, req.NodeId)
+	if err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("Error Internal: %v", err))
+	}
+	return &csi.ControllerUnpublishVolumeResponse{}, nil
+}
+func (d *Driver) ValidateVolumeCapabilities(ctx context.Context, req *csi.ValidateVolumeCapabilitiesRequest) (*csi.ValidateVolumeCapabilitiesResponse, error) {
+	fmt.Printf("[DEBUG][ValidateVolumeCapabilities][*csi.ValidateVolumeCapabilitiesRequest] %+v \n", req)
 	return nil, nil
 }
-func (d *Driver) ValidateVolumeCapabilities(context.Context, *csi.ValidateVolumeCapabilitiesRequest) (*csi.ValidateVolumeCapabilitiesResponse, error) {
+func (d *Driver) ListVolumes(ctx context.Context, req *csi.ListVolumesRequest) (*csi.ListVolumesResponse, error) {
+	fmt.Printf("[DEBUG][ListVolumes][*csi.ListVolumesRequest] %+v \n", req)
 	return nil, nil
 }
-func (d *Driver) ListVolumes(context.Context, *csi.ListVolumesRequest) (*csi.ListVolumesResponse, error) {
+func (d *Driver) GetCapacity(ctx context.Context, req *csi.GetCapacityRequest) (*csi.GetCapacityResponse, error) {
+	fmt.Printf("[DEBUG][GetCapacity][*csi.GetCapacityRequest] %+v \n", req)
 	return nil, nil
 }
-func (d *Driver) GetCapacity(context.Context, *csi.GetCapacityRequest) (*csi.GetCapacityResponse, error) {
-	return nil, nil
-}
-func (d *Driver) ControllerGetCapabilities(context.Context, *csi.ControllerGetCapabilitiesRequest) (*csi.ControllerGetCapabilitiesResponse, error) {
+func (d *Driver) ControllerGetCapabilities(ctx context.Context, req *csi.ControllerGetCapabilitiesRequest) (*csi.ControllerGetCapabilitiesResponse, error) {
+	fmt.Printf("[DEBUG][ControllerGetCapabilities][*csi.ControllerGetCapabilitiesRequest] %+v \n", req)
 	caps := []*csi.ControllerServiceCapability{}
 
 	for _, c := range []csi.ControllerServiceCapability_RPC_Type{
@@ -109,21 +117,27 @@ func (d *Driver) ControllerGetCapabilities(context.Context, *csi.ControllerGetCa
 		Capabilities: caps,
 	}, nil
 }
-func (d *Driver) CreateSnapshot(context.Context, *csi.CreateSnapshotRequest) (*csi.CreateSnapshotResponse, error) {
+func (d *Driver) CreateSnapshot(ctx context.Context, req *csi.CreateSnapshotRequest) (*csi.CreateSnapshotResponse, error) {
+	fmt.Printf("[DEBUG][CreateSnapshot][*csi.CreateSnapshotRequest] %+v \n", req)
 	return nil, nil
 }
-func (d *Driver) DeleteSnapshot(context.Context, *csi.DeleteSnapshotRequest) (*csi.DeleteSnapshotResponse, error) {
+func (d *Driver) DeleteSnapshot(ctx context.Context, req *csi.DeleteSnapshotRequest) (*csi.DeleteSnapshotResponse, error) {
+	fmt.Printf("[DEBUG][DeleteSnapshot][*csi.DeleteSnapshotRequest] %+v \n", req)
 	return nil, nil
 }
-func (d *Driver) ListSnapshots(context.Context, *csi.ListSnapshotsRequest) (*csi.ListSnapshotsResponse, error) {
+func (d *Driver) ListSnapshots(ctx context.Context, req *csi.ListSnapshotsRequest) (*csi.ListSnapshotsResponse, error) {
+	fmt.Printf("[DEBUG][ListSnapshots][*csi.ListSnapshotsRequest] %+v \n", req)
 	return nil, nil
 }
-func (d *Driver) ControllerExpandVolume(context.Context, *csi.ControllerExpandVolumeRequest) (*csi.ControllerExpandVolumeResponse, error) {
+func (d *Driver) ControllerExpandVolume(ctx context.Context, req *csi.ControllerExpandVolumeRequest) (*csi.ControllerExpandVolumeResponse, error) {
+	fmt.Printf("[DEBUG][ControllerExpandVolume][*csi.ControllerExpandVolumeRequest] %+v \n", req)
 	return nil, nil
 }
-func (d *Driver) ControllerGetVolume(context.Context, *csi.ControllerGetVolumeRequest) (*csi.ControllerGetVolumeResponse, error) {
+func (d *Driver) ControllerGetVolume(ctx context.Context, req *csi.ControllerGetVolumeRequest) (*csi.ControllerGetVolumeResponse, error) {
+	fmt.Printf("[DEBUG][ControllerGetVolume][*csi.ControllerGetVolumeRequest] %+v \n", req)
 	return nil, nil
 }
-func (d *Driver) ControllerModifyVolume(context.Context, *csi.ControllerModifyVolumeRequest) (*csi.ControllerModifyVolumeResponse, error) {
+func (d *Driver) ControllerModifyVolume(ctx context.Context, req *csi.ControllerModifyVolumeRequest) (*csi.ControllerModifyVolumeResponse, error) {
+	fmt.Printf("[DEBUG][ControllerModifyVolume][*csi.ControllerModifyVolumeRequest] %+v \n", req)
 	return nil, nil
 }

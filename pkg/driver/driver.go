@@ -3,14 +3,17 @@ package driver
 import (
 	"fmt"
 	"net"
+	"net/http"
 	"net/url"
 	"os"
 	"path"
 	"path/filepath"
+	"time"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
-	"github.com/goryszewski/autok8s-CSI-libvirtApi/pkg/iscsi"
 	"google.golang.org/grpc"
+
+	libvirtApiClient "github.com/goryszewski/libvirtApi-client/libvirtApiClient"
 )
 
 const Name string = "Libvirtapi"
@@ -20,7 +23,7 @@ type Driver struct {
 	endpoint string
 
 	srv     *grpc.Server
-	storage *iscsi.StorageService
+	storage *libvirtApiClient.Client
 	ready   bool
 }
 
@@ -29,12 +32,13 @@ type InputParam struct {
 	Endpoint string
 }
 
-func NewDriver(params InputParam) (*Driver, error) {
+func NewDriver(params InputParam, conf libvirtApiClient.Config) (*Driver, error) {
 
+	client, _ := libvirtApiClient.NewClient(conf, &http.Client{Timeout: 10 * time.Second})
 	return &Driver{
 		name:     params.Name,
 		endpoint: params.Endpoint,
-		storage:  iscsi.NewIscsi(),
+		storage:  client,
 	}, nil
 }
 

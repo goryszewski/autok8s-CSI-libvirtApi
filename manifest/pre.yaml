@@ -1,0 +1,52 @@
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: csi-libvirt-sa
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: libvirt-sa-cluster-role
+rules:
+- apiGroups: [""]
+  resources: 
+    - "persistentvolumeclaims"
+    - "persistentvolumes"
+    - "events"
+  verbs: 
+    - "patch"
+    - "create"
+    - "list"
+    - "watch"
+    - "delete"
+
+- apiGroups: ["storage.k8s.io"]
+  resources: 
+    - "volumeattachments"
+    - "volumeattachments/status"
+    - "storageclasses"
+    - "csinodes"
+  verbs:
+    - "patch"
+    - "list"
+    - "watch"
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+# This cluster role binding allows anyone in the "manager" group to read secrets in any namespace.
+kind: ClusterRoleBinding
+metadata:
+  name: libvirt-sa-cluster-Binding-global
+subjects:
+- kind: ServiceAccount
+  name: csi-libvirt-sa
+  namespace: default
+roleRef:
+  kind: ClusterRole
+  name: libvirt-sa-cluster-role
+  apiGroup: rbac.authorization.k8s.io
