@@ -12,6 +12,9 @@ spec:
         name: node-plugin
     spec:
       volumes:
+        - name: mnt
+          hostPath:
+            path: /mnt
         - name: device-dir
           hostPath:
             path: /dev
@@ -31,34 +34,49 @@ spec:
             type: DirectoryOrCreate
       containers:
       - name: csi-driver-registrar
+        securityContext:
+          privileged: true
         image: registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.5.0
         args:
           - "--csi-address=/csi/csi.sock"
           - "--kubelet-registration-path=/var/lib/kubelet/plugins/Libvirtapi/csi.sock"
+          - "-v=5"
         volumeMounts:
           - name: plugin-dir
             mountPath: /csi
           - name: registration-dir
             mountPath: /registration
+          - name: mnt
+            mountPath: /mnt
+            mountPropagation: "Bidirectional"
+          - name: pods-vol-dir
+            mountPath: /var/lib/kubelet
+            mountPropagation: "Bidirectional"
+          - name: device-dir
+            mountPath: /dev
       - name: node-plugin
         image: repo.mgmt.autok8s.ext:5000/csi-libvirt:latest
         args:
           - "--endpoint=$(CSI_ENDPOINT)"
+          - "--role=node"
         env:
         - name: CSI_ENDPOINT
           value: unix:///csi/csi.sock
         securityContext:
           privileged: true
         volumeMounts:
-        - name : id
-          mountPath: /id
-        - name: pods-vol-dir
-          mountPath: /var/lib/kubelet
-          mountPropagation: "Bidirectional"
-        - name: device-dir
-          mountPath: /dev
-        - name: plugin-dir
-          mountPath: /csi
+          - name : id
+            mountPath: /id
+          - name: pods-vol-dir
+            mountPath: /var/lib/kubelet
+            mountPropagation: "Bidirectional"
+          - name: mnt
+            mountPath: /mnt
+            mountPropagation: "Bidirectional"
+          - name: device-dir
+            mountPath: /dev
+          - name: plugin-dir
+            mountPath: /csi
 
 ---
 apiVersion: apps/v1
@@ -106,6 +124,7 @@ spec:
           image: repo.mgmt.autok8s.ext:5000/csi-libvirt:latest
           args: 
             - "--endpoint=$(CSI_ENDPOINT)"
+            - "--role=controler"
           env:
             - name: "CSI_ENDPOINT"
               value: "unix:///sock/csi.sock"

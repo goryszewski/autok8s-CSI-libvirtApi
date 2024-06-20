@@ -58,14 +58,21 @@ func (d *Driver) ControllerPublishVolume(ctx context.Context, req *csi.Controlle
 	}
 
 	id, _ := strconv.Atoi(req.VolumeId)
-	err := d.storage.BindDisk(id, req.NodeId)
+	DiskBindInfo, err := d.storage.BindDisk(id, req.NodeId)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("Error Internal: %v", err))
 	}
-
+	if (DiskBindInfo.ID == "") || (DiskBindInfo.Address == "") {
+		return nil, status.Error(codes.InvalidArgument, "Bad Api Response ")
+	}
+	fmt.Printf("[DEBUG][ControllerPublishVolume][DiskBindInfo] %+v \n", DiskBindInfo)
 	return &csi.ControllerPublishVolumeResponse{
 		PublishContext: map[string]string{
 			"libvirtCSI": req.VolumeId,
+			"ID":         DiskBindInfo.ID,
+			"Path":       DiskBindInfo.Path,
+			"Target":     DiskBindInfo.Target,
+			"Address":    DiskBindInfo.Address,
 		},
 	}, nil
 }

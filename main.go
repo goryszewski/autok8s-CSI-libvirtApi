@@ -5,13 +5,14 @@ import (
 	"fmt"
 
 	"github.com/goryszewski/autok8s-CSI-libvirtApi/pkg/driver"
-	"github.com/goryszewski/libvirtApi-client/libvirtApiClient"
+	libvirtApiClient "github.com/goryszewski/libvirtApi-client/libvirtApiClient"
 )
 
 func main() {
 	fmt.Println("Start 001")
 	var (
 		endpoint = flag.String("endpoint", "default", "Endpoint gRPC")
+		role     = flag.String("role", "controler", "role")
 	)
 	flag.Parse()
 
@@ -29,7 +30,7 @@ func main() {
 		fmt.Println("Error load driver", err.Error())
 	}
 
-	if err := drv.Run(); err != nil {
+	if err := drv.Run(role); err != nil {
 		fmt.Println(err)
 	}
 }

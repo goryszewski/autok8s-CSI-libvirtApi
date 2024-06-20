@@ -1,11 +1,11 @@
 # autok8s-CSI-libvirtApi
 CSI - sandbox
 
-# run
-go run . --endpoint unix:///var/lib/autok8s/csi.sock
 
-# build
+# DOTO
 
-# list
-
-k get csinodes.storage.k8s.io master01 -o yaml
+* Config for api (cofnigMap , params)
+* helm
+* move validators: ismount ...
+* resize 
+* snap

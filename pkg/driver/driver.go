@@ -42,7 +42,7 @@ func NewDriver(params InputParam, conf libvirtApiClient.Config) (*Driver, error)
 	}, nil
 }
 
-func (d *Driver) Run() error {
+func (d *Driver) Run(role *string) error {
 	url, err := url.Parse(d.endpoint)
 	if err != nil {
 		return fmt.Errorf("problem parsing : %s", err.Error())
@@ -71,9 +71,12 @@ func (d *Driver) Run() error {
 	fmt.Println(listener)
 	d.srv = grpc.NewServer()
 
-	csi.RegisterNodeServer(d.srv, d)
-	csi.RegisterControllerServer(d.srv, d)
 	csi.RegisterIdentityServer(d.srv, d)
+	if *role == "node" {
+		csi.RegisterNodeServer(d.srv, d)
+	} else {
+		csi.RegisterControllerServer(d.srv, d)
+	}
 	d.ready = true
 	return d.srv.Serve(listener) // blocking call
 }
