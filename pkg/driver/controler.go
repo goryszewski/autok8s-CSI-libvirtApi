@@ -11,15 +11,12 @@ import (
 )
 
 func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
-	fmt.Printf("[DEBUG][CreateVolume] called")
-	// fmt.Printf("req: [%+v] \n", *req)
-	// req: [{Name:pvc-5c8397b5-1e68-434a-8ab0-635dad53ce73 CapacityRange:required_bytes:1073741824  VolumeCapabilities:[mount:<> access_mode:<mode:SINGLE_NODE_WRITER > ] Parameters:map[] Secrets:map[] VolumeContentSource:<nil> AccessibilityRequirements:<nil> MutableParameters:map[] XXX_NoUnkeyedLiteral:{} XXX_unrecognized:[] XXX_sizecache:0}]
 	if req.Name == "" {
 		return nil, status.Error(codes.InvalidArgument, "CreateVolume - Expect name")
 	}
 
 	var sizeByte int64 = req.CapacityRange.GetLimitBytes()
-	fmt.Printf("[DEBUG][CreateVolume][req.CapacityRange.GetLimitBytes()] %+v \n", sizeByte)
+
 	if req.VolumeCapabilities == nil || len(req.VolumeCapabilities) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "CreateVolume - Expect VolumeCapabilities")
 	}
@@ -28,7 +25,6 @@ func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "Failed provisioning volume")
 	}
-	fmt.Printf("[DEBUG][CreateVolume][CreateDisk] %+v \n", vol)
 
 	return &csi.CreateVolumeResponse{
 		Volume: &csi.Volume{
@@ -38,9 +34,8 @@ func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 	}, nil
 }
 func (d *Driver) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
-	fmt.Printf("[DEBUG][DeleteVolume][*csi.DeleteVolumeRequest] %+v \n", req)
-
 	id, _ := strconv.Atoi(req.VolumeId)
+
 	err := d.storage.DeleteDisk(id)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "Failed Delete volume")
@@ -49,23 +44,25 @@ func (d *Driver) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest)
 	return &csi.DeleteVolumeResponse{}, nil
 }
 func (d *Driver) ControllerPublishVolume(ctx context.Context, req *csi.ControllerPublishVolumeRequest) (*csi.ControllerPublishVolumeResponse, error) {
-	fmt.Printf("[DEBUG][ControllerPublishVolume][*csi.ControllerPublishVolumeRequest] %+v \n", req)
 	if req.VolumeId == "" {
 		return nil, status.Error(codes.InvalidArgument, "VolumeID is mandatory")
 	}
+
 	if req.NodeId == "" {
 		return nil, status.Error(codes.InvalidArgument, "NodeId is mandatory")
 	}
 
 	id, _ := strconv.Atoi(req.VolumeId)
+
 	DiskBindInfo, err := d.storage.BindDisk(id, req.NodeId)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("Error Internal: %v", err))
 	}
+
 	if (DiskBindInfo.ID == "") || (DiskBindInfo.Address == "") {
 		return nil, status.Error(codes.InvalidArgument, "Bad Api Response ")
 	}
-	fmt.Printf("[DEBUG][ControllerPublishVolume][DiskBindInfo] %+v \n", DiskBindInfo)
+
 	return &csi.ControllerPublishVolumeResponse{
 		PublishContext: map[string]string{
 			"libvirtCSI": req.VolumeId,
@@ -77,18 +74,21 @@ func (d *Driver) ControllerPublishVolume(ctx context.Context, req *csi.Controlle
 	}, nil
 }
 func (d *Driver) ControllerUnpublishVolume(ctx context.Context, req *csi.ControllerUnpublishVolumeRequest) (*csi.ControllerUnpublishVolumeResponse, error) {
-	fmt.Printf("[DEBUG][ControllerUnpublishVolume][*csi.ControllerUnpublishVolumeRequest] %+v \n", req)
 	if req.VolumeId == "" {
 		return nil, status.Error(codes.InvalidArgument, "VolumeID is mandatory")
 	}
+
 	if req.NodeId == "" {
 		return nil, status.Error(codes.InvalidArgument, "NodeId is mandatory")
 	}
+
 	id, _ := strconv.Atoi(req.VolumeId)
+
 	err := d.storage.UnBindDisk(id, req.NodeId)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("Error Internal: %v", err))
 	}
+
 	return &csi.ControllerUnpublishVolumeResponse{}, nil
 }
 func (d *Driver) ValidateVolumeCapabilities(ctx context.Context, req *csi.ValidateVolumeCapabilitiesRequest) (*csi.ValidateVolumeCapabilitiesResponse, error) {
@@ -104,7 +104,6 @@ func (d *Driver) GetCapacity(ctx context.Context, req *csi.GetCapacityRequest) (
 	return nil, nil
 }
 func (d *Driver) ControllerGetCapabilities(ctx context.Context, req *csi.ControllerGetCapabilitiesRequest) (*csi.ControllerGetCapabilitiesResponse, error) {
-	fmt.Printf("[DEBUG][ControllerGetCapabilities][*csi.ControllerGetCapabilitiesRequest] %+v \n", req)
 	caps := []*csi.ControllerServiceCapability{}
 
 	for _, c := range []csi.ControllerServiceCapability_RPC_Type{

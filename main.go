@@ -1,36 +1,48 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
-	"fmt"
+	"os"
+
+	"log"
 
 	"github.com/goryszewski/autok8s-CSI-libvirtApi/pkg/driver"
-	libvirtApiClient "github.com/goryszewski/libvirtApi-client/libvirtApiClient"
+	"github.com/goryszewski/libvirtApi-client/libvirtApiClient"
 )
 
 func main() {
-	fmt.Println("Start 001")
 	var (
-		endpoint = flag.String("endpoint", "default", "Endpoint gRPC")
-		role     = flag.String("role", "controler", "role")
+		endpoint   = flag.String("endpoint", "default", "Endpoint gRPC")
+		role       = flag.String("role", "controler", "role")
+		configFile = flag.String("config", "", "config")
 	)
 	flag.Parse()
 
-	fmt.Println(*endpoint)
+	if *configFile == "" {
+		log.Fatal("Config Required")
+	}
 
-	test := "CSIv"
-	URL := "http://10.17.3.1:8050"
-	// DOTO FIX static
+	var conf libvirtApiClient.Config
 
-	conf := libvirtApiClient.Config{Username: &test, Password: &test, Url: &URL}
+	data, err := os.ReadFile(*configFile)
+
+	if err != nil {
+		log.Fatal("Error read file")
+	}
+
+	err = json.Unmarshal(data, &conf)
+	if err != nil {
+		log.Fatal("error parse config file")
+	}
 
 	drv, err := driver.NewDriver(driver.InputParam{Endpoint: *endpoint, Name: driver.Name}, conf)
 
 	if err != nil {
-		fmt.Println("Error load driver", err.Error())
+		log.Println("Error load driver", err.Error())
 	}
 
 	if err := drv.Run(role); err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 }

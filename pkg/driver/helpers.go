@@ -9,7 +9,7 @@ import (
 func mount(source, target string, args *[]string) error {
 	err := os.MkdirAll(target, 0777)
 	if err != nil {
-		return fmt.Errorf("MKDIR problem create")
+		return fmt.Errorf("mkdir: %v problem create: %v", target, err.Error())
 	}
 
 	cmd := "mount"
@@ -18,17 +18,8 @@ func mount(source, target string, args *[]string) error {
 	arg = append(arg, source)
 	arg = append(arg, target)
 
-	_, err = exec.LookPath(cmd)
+	err = run(cmd, arg)
 	if err != nil {
-		fmt.Printf("[DEBUG][mount][LookPath][ERROR] %#+v \n", err)
-		return fmt.Errorf("problem path cmd Mount: %v", err.Error())
-	}
-
-	cmdmount := exec.Command(cmd, arg...)
-
-	_, err = cmdmount.Output()
-	if err != nil {
-
 		return fmt.Errorf("problem Mount: %v", err.Error())
 	}
 
@@ -38,11 +29,9 @@ func mount(source, target string, args *[]string) error {
 func Umount(path string) error {
 	cmd := "umount"
 	arg := append([]string{}, path)
-	cmdmount := exec.Command(cmd, arg...)
 
-	_, err := cmdmount.Output()
+	err := run(cmd, arg)
 	if err != nil {
-
 		return fmt.Errorf("problem Mount: %v", err.Error())
 	}
 
@@ -53,14 +42,8 @@ func Formater(fstype, source string) error {
 	cmd := fmt.Sprintf("mkfs.%s", fstype)
 	arg := []string{"-F", source}
 
-	_, err := exec.LookPath(cmd)
+	err := run(cmd, arg)
 	if err != nil {
-		return fmt.Errorf("problem  path cmd Format: %v", err.Error())
-	}
-
-	_, err = exec.Command(cmd, arg...).CombinedOutput()
-	if err != nil {
-
 		return fmt.Errorf("problem Format: %v", err.Error())
 	}
 
@@ -72,7 +55,7 @@ func isNotFormated(source string) (bool, error) {
 
 	err := run(cmd, arg)
 	if err != nil {
-		return true, fmt.Errorf("error run cmd")
+		return true, fmt.Errorf("error exec: %s", err.Error())
 	}
 
 	return false, nil
@@ -88,7 +71,6 @@ func run(cmd string, arg []string) error {
 
 	_, err = cmdmount.Output()
 	if err != nil {
-
 		return fmt.Errorf("problem %s: %v", cmd, err.Error())
 	}
 
