@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 )
 
 func mount(source, target string, args *[]string) error {
@@ -75,4 +76,15 @@ func run(cmd string, arg []string) error {
 	}
 
 	return nil
+}
+
+func GetIDNode() (string, error) {
+	// DOTO endpoint metadata
+	nodeID, err := os.ReadFile("/id")
+	if err != nil {
+		return "", fmt.Errorf("failed read is %s \n", err.Error())
+	}
+	id := strings.ReplaceAll(string(nodeID), "\\n", "")
+	id = strings.ReplaceAll(id, "\n", "")
+	return id, nil
 }

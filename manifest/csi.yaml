@@ -1,3 +1,20 @@
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: csi-config
+
+data:
+  conf.json: |
+    {
+      "Username" : "CSIv",
+      "Password" : "CSIv",
+      "Url" : "http://10.17.3.1:8050"
+    }
+# DOTO fix plain text password after migrate to HELM
+---
+
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -12,6 +29,9 @@ spec:
         name: node-plugin
     spec:
       volumes:
+        - name: csi-config
+          configMap:
+            name: csi-config
         - name: mnt
           hostPath:
             path: /mnt
@@ -36,12 +56,14 @@ spec:
       - name: csi-driver-registrar
         securityContext:
           privileged: true
-        image: registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.5.0
+        image: registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.10.1
         args:
           - "--csi-address=/csi/csi.sock"
           - "--kubelet-registration-path=/var/lib/kubelet/plugins/Libvirtapi/csi.sock"
           - "-v=5"
         volumeMounts:
+          - name: csi-config
+            mountPath: /etc/csi/conf.json
           - name: plugin-dir
             mountPath: /csi
           - name: registration-dir
@@ -59,12 +81,15 @@ spec:
         args:
           - "--endpoint=$(CSI_ENDPOINT)"
           - "--role=node"
+          - "--config=/etc/csi/conf.json"
         env:
         - name: CSI_ENDPOINT
           value: unix:///csi/csi.sock
         securityContext:
           privileged: true
-        volumeMounts:
+        volumeMounts:          
+          - name: csi-config
+            mountPath: /etc/csi
           - name : id
             mountPath: /id
           - name: pods-vol-dir
@@ -79,6 +104,7 @@ spec:
             mountPath: /csi
 
 ---
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -125,13 +151,24 @@ spec:
           args: 
             - "--endpoint=$(CSI_ENDPOINT)"
             - "--role=controler"
+            - "--config=/etc/csi/conf.json"
           env:
             - name: "CSI_ENDPOINT"
               value: "unix:///sock/csi.sock"
-          volumeMounts:
+          volumeMounts:          
+            - name : id
+              mountPath: /id
+            - name: csi-config
+              mountPath: /etc/csi
             - mountPath: /sock
               name: sock-volume
 
       volumes:
-      - name: sock-volume
-        emptyDir: {}
+        - name: id
+          hostPath:
+            path: /etc/hostname
+        - name: csi-config
+          configMap:
+            name: csi-config
+        - name: sock-volume
+          emptyDir: {}

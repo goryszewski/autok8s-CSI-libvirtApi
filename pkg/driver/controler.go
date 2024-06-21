@@ -10,25 +10,44 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+const (
+	_   = iota
+	kiB = 1 << (10 * iota)
+	miB
+	giB
+	tiB
+)
+
+const defaultVolumeSizeInBytes int64 = 16 * giB
+
 func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
 	if req.Name == "" {
 		return nil, status.Error(codes.InvalidArgument, "CreateVolume - Expect name")
 	}
 
-	var sizeByte int64 = req.CapacityRange.GetLimitBytes()
+	requiredBytes := req.CapacityRange.GetRequiredBytes()
+	requiredSet := 0 < requiredBytes
+	limitBytes := req.CapacityRange.GetLimitBytes()
+	limitSet := 0 < limitBytes
+	size := requiredBytes
+
+	if !requiredSet && !limitSet {
+		size = defaultVolumeSizeInBytes
+	}
 
 	if req.VolumeCapabilities == nil || len(req.VolumeCapabilities) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "CreateVolume - Expect VolumeCapabilities")
 	}
 
-	vol, err := d.storage.CreateDisk(8)
+	d.log.Infof(" requiredBytes:%v | limitBytes:%v | size:%v | size big:%v", requiredBytes, limitBytes, size, int(size/giB))
+	vol, err := d.storage.CreateDisk(int(size / giB))
 	if err != nil {
 		return nil, status.Error(codes.Internal, "Failed provisioning volume")
 	}
 
 	return &csi.CreateVolumeResponse{
 		Volume: &csi.Volume{
-			CapacityBytes: sizeByte,
+			CapacityBytes: size,
 			VolumeId:      strconv.Itoa(vol.ID),
 		},
 	}, nil

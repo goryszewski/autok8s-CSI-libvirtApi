@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
+	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 
 	libvirtApiClient "github.com/goryszewski/libvirtApi-client/libvirtApiClient"
@@ -24,6 +25,7 @@ type Driver struct {
 
 	srv     *grpc.Server
 	storage *libvirtApiClient.Client
+	log     *logrus.Entry
 	ready   bool
 }
 
@@ -34,11 +36,20 @@ type InputParam struct {
 
 func NewDriver(params InputParam, conf libvirtApiClient.Config) (*Driver, error) {
 
-	client, _ := libvirtApiClient.NewClient(conf, &http.Client{Timeout: 10 * time.Second})
+	id, err := GetIDNode()
+	if err != nil {
+		return nil, fmt.Errorf("problem with id: %v", err)
+	}
+	log := logrus.New().WithFields(logrus.Fields{
+		"host_id": id,
+	})
+
+	clientStorage, _ := libvirtApiClient.NewClient(conf, &http.Client{Timeout: 10 * time.Second})
 	return &Driver{
 		name:     params.Name,
 		endpoint: params.Endpoint,
-		storage:  client,
+		storage:  clientStorage,
+		log:      log,
 	}, nil
 }
 
@@ -52,10 +63,11 @@ func (d *Driver) Run(role *string) error {
 		return fmt.Errorf("shema is not unix : %s", url.Scheme)
 	}
 
-	fmt.Printf("DEBUG: url.Host: %s\n", url.Host)
-	fmt.Printf("DEBUG: url.Path: %s\n", url.Path)
+	d.log.Infof("DEBUG: url.Host: %s\n", url.Host)
+	d.log.Infof("DEBUG: url.Path: %s\n", url.Path)
 	grpcAddress := path.Join(url.Host, filepath.FromSlash(url.Path))
-	fmt.Printf("DEBUG: grpcAddress: %s\n", grpcAddress)
+	d.log.Infof("DEBUG: grpcAddress: %s\n", grpcAddress)
+
 	if url.Host == "" {
 		grpcAddress = filepath.FromSlash(url.Path)
 	}
@@ -68,7 +80,7 @@ func (d *Driver) Run(role *string) error {
 	if e != nil {
 		return fmt.Errorf("problem with net.Listen: %s", e)
 	}
-	fmt.Println(listener)
+
 	d.srv = grpc.NewServer()
 
 	csi.RegisterIdentityServer(d.srv, d)

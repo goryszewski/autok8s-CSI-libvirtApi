@@ -3,8 +3,6 @@ package driver
 import (
 	"context"
 	"fmt"
-	"os"
-	"strings"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"google.golang.org/grpc/codes"
@@ -109,8 +107,6 @@ func (d *Driver) NodeExpandVolume(ctx context.Context, req *csi.NodeExpandVolume
 	return nil, nil
 }
 func (d *Driver) NodeGetCapabilities(ctx context.Context, req *csi.NodeGetCapabilitiesRequest) (*csi.NodeGetCapabilitiesResponse, error) {
-	fmt.Printf("[DEBUG][NodeGetCapabilities][*csi.NodeGetCapabilitiesRequest] %#+v \n", req)
-
 	return &csi.NodeGetCapabilitiesResponse{
 		Capabilities: []*csi.NodeServiceCapability{
 			&csi.NodeServiceCapability{
@@ -124,19 +120,13 @@ func (d *Driver) NodeGetCapabilities(ctx context.Context, req *csi.NodeGetCapabi
 	}, nil
 }
 func (d *Driver) NodeGetInfo(ctx context.Context, req *csi.NodeGetInfoRequest) (*csi.NodeGetInfoResponse, error) {
-	fmt.Printf("[DEBUG][NodeGetInfo][*csi.NodeGetInfoRequest] %+v \n", req)
-	nodeID, err := os.ReadFile("/id")
+	nodeID, err := GetIDNode()
 	if err != nil {
-		fmt.Printf("[DEBUG][NodeGetInfo][os.ReadFile(/id)] %+v \n", err)
+		return nil, fmt.Errorf("failed read is %+v \n", err)
 	}
-	id := strings.ReplaceAll(string(nodeID), "\\n", "")
-	id = strings.ReplaceAll(id, "\n", "")
-	fmt.Printf("[DEBUG][NodeGetInfo][nodeID] %v \n", id)
-
-	// DOTO endpoint metadata
 
 	return &csi.NodeGetInfoResponse{
-		NodeId:            id + ".autok8s.xyz",
+		NodeId:            nodeID + ".autok8s.xyz",
 		MaxVolumesPerNode: 5,
 		AccessibleTopology: &csi.Topology{
 			Segments: map[string]string{
