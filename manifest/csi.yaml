@@ -4,15 +4,21 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: csi-config
-
 data:
-  conf.json: |
-    {
-      "Username" : "CSIv",
-      "Password" : "CSIv",
-      "Url" : "http://10.17.3.1:8050"
-    }
-# DOTO fix plain text password after migrate to HELM
+  Url: "http://10.17.3.1:8050"
+
+
+---
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: secret-csi-config
+type: Opaque
+data:
+  Username: YmFyCg==
+  Password: YmFyCg==
+
 ---
 
 apiVersion: apps/v1
@@ -81,10 +87,27 @@ spec:
         args:
           - "--endpoint=$(CSI_ENDPOINT)"
           - "--role=node"
-          - "--config=/etc/csi/conf.json"
+          - "--url=$(CSI_URL_API)"
+          - "--user=$(USER_API)"
+          - "--pass=$(PASS_API)"
         env:
-        - name: CSI_ENDPOINT
-          value: unix:///csi/csi.sock
+          - name: "CSI_ENDPOINT"
+            value: "unix:///sock/csi.sock"
+          - name: "CSI_URL_API"
+            valueFrom:
+              configMapKeyRef:
+                name: csi-config
+                key: Url
+          - name: USER_API
+            valueFrom:
+              secretKeyRef:
+                name: secret-csi-config
+                key: Username
+          - name: PASS_API
+            valueFrom:
+              secretKeyRef:
+                name: secret-csi-config
+                key: Password
         securityContext:
           privileged: true
         volumeMounts:          
@@ -151,10 +174,27 @@ spec:
           args: 
             - "--endpoint=$(CSI_ENDPOINT)"
             - "--role=controler"
-            - "--config=/etc/csi/conf.json"
+            - "--url=$(CSI_URL_API)"
+            - "--user=$(USER_API)"
+            - "--pass=$(PASS_API)"
           env:
             - name: "CSI_ENDPOINT"
               value: "unix:///sock/csi.sock"
+            - name: "CSI_URL_API"
+              valueFrom:
+                configMapKeyRef:
+                  name: csi-config
+                  key: Url
+            - name: USER_API
+              valueFrom:
+                secretKeyRef:
+                  name: secret-csi-config
+                  key: Username
+            - name: PASS_API
+              valueFrom:
+                secretKeyRef:
+                  name: secret-csi-config
+                  key: Password
           volumeMounts:          
             - name : id
               mountPath: /id
