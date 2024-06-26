@@ -16,24 +16,31 @@ func main() {
 		endpoint   = flag.String("endpoint", "default", "Endpoint gRPC")
 		role       = flag.String("role", "controler", "role")
 		configFile = flag.String("config", "", "config")
+		url        = flag.String("url", "", "")
+		user       = flag.String("user", "", "")
+		pass       = flag.String("pass", "", "")
 	)
 	flag.Parse()
 
-	if *configFile == "" {
-		log.Fatal("Config Required")
+	if *configFile == "" && *user == "" && *pass == "" && *url == "" {
+		log.Fatal("Config or variables(url,user,pass) Required ")
 	}
 
 	var conf libvirtApiClient.Config
 
-	data, err := os.ReadFile(*configFile)
+	if *configFile != "" {
 
-	if err != nil {
-		log.Fatal("Error read file")
-	}
+		data, err := os.ReadFile(*configFile)
+		if err != nil {
+			log.Fatal("Error read file")
+		}
 
-	err = json.Unmarshal(data, &conf)
-	if err != nil {
-		log.Fatal("error parse config file")
+		err = json.Unmarshal(data, &conf)
+		if err != nil {
+			log.Fatal("error parse config file")
+		}
+	} else {
+		conf = libvirtApiClient.Config{Username: user, Password: pass, Url: url}
 	}
 
 	drv, err := driver.NewDriver(driver.InputParam{Endpoint: *endpoint, Name: driver.Name}, conf)
