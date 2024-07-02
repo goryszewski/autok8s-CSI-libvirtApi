@@ -10,7 +10,8 @@ FROM debian:latest
 
 WORKDIR /app
 
-# RUN apk add --no-cache e2fsprogs
+RUN apt update ; apt install cryptsetup -y
+
 
 COPY --from=builder /app/csi-libvirt /app/csi-libvirt
 

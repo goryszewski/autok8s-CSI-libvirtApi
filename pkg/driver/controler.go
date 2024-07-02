@@ -40,22 +40,35 @@ func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 	}
 
 	d.log.Infof(" requiredBytes:%v | limitBytes:%v | size:%v | size big:%v", requiredBytes, limitBytes, size, int(size/giB))
+
 	vol, err := d.storage.CreateDisk(int(size / giB))
 	if err != nil {
 		return nil, status.Error(codes.Internal, "Failed provisioning volume")
+	}
+
+	VolumeContext := map[string]string{"encrypt": "false"}
+	if value, ok := req.Parameters["encrypt"]; ok {
+		VolumeContext["encrypt"] = value
 	}
 
 	return &csi.CreateVolumeResponse{
 		Volume: &csi.Volume{
 			CapacityBytes: size,
 			VolumeId:      strconv.Itoa(vol.ID),
+			VolumeContext: VolumeContext,
 		},
 	}, nil
 }
-func (d *Driver) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
-	id, _ := strconv.Atoi(req.VolumeId)
 
-	err := d.storage.DeleteDisk(id)
+func (d *Driver) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
+	d.log.Infof("Called DeleteVolume[%s]", req.VolumeId)
+
+	id, err := strconv.Atoi(req.VolumeId)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "Failed convert Id")
+	}
+
+	err = d.storage.DeleteDisk(id)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "Failed Delete volume")
 	}

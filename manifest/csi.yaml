@@ -21,6 +21,16 @@ data:
 
 ---
 
+apiVersion: v1
+kind: Secret
+metadata:
+  name: secret-csi-luks
+type: Opaque
+data:
+  password: YmFyCg==
+
+---
+
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -35,6 +45,9 @@ spec:
         name: node-plugin
     spec:
       volumes:
+        - name: secret-csi-luks
+          secret:
+            secretName: secret-csi-luks
         - name: csi-config
           configMap:
             name: csi-config
@@ -92,7 +105,7 @@ spec:
           - "--pass=$(PASS_API)"
         env:
           - name: "CSI_ENDPOINT"
-            value: "unix:///sock/csi.sock"
+            value: "unix:///csi/csi.sock"
           - name: "CSI_URL_API"
             valueFrom:
               configMapKeyRef:
@@ -110,7 +123,10 @@ spec:
                 key: Password
         securityContext:
           privileged: true
-        volumeMounts:          
+        volumeMounts:
+          - mountPath: "/etc/luks"
+            name: secret-csi-luks
+            readOnly: true          
           - name: csi-config
             mountPath: /etc/csi
           - name : id

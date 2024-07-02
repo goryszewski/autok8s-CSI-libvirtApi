@@ -3,16 +3,27 @@
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
-  name: lva
+  name: lva-encrypt
 provisioner: Libvirtapi
 volumeBindingMode: Immediate
+
+allowVolumeExpansion: true
+mountOptions:
+  - "-v"
+parameters:
+  url: "true" # provider-specific
+  readOnly: "false"
+  diskformat: "true"
+  encrypt: "true"
 
 ---
 
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: test-lva 
+  name: test-lva-encrypt
+  annotations:
+    storageclass.kubernetes.io/is-encrypt: "true"
 spec:
   accessModes:
     - ReadWriteOnce
@@ -20,4 +31,38 @@ spec:
   resources:
     requests:
       storage: 20Gi
-  storageClassName: lva 
+  storageClassName: lva-encrypt 
+
+---
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: lva
+provisioner: Libvirtapi
+volumeBindingMode: Immediate
+
+allowVolumeExpansion: true
+mountOptions:
+  - "-v"
+parameters:
+  url: "true" # provider-specific
+  readOnly: "false"
+  diskformat: "true"
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: test-lva 
+  annotations:
+    storageclass.kubernetes.io/is-encrypt: "true"
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: lva

@@ -5,7 +5,8 @@ CSI - sandbox
 # DOTO
 
 * Config for api (cofnigMap , params) (/)
-* encrypt - luks + tang/clevis
+* encrypt - luks (/)
+* encrypt - clevis 
 * helm
 * move validators: ismount ...
 * resize (problem with resize when disk is bind)

@@ -10,12 +10,12 @@ import (
 )
 
 func (d *Driver) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRequest) (*csi.NodeStageVolumeResponse, error) {
-	fmt.Printf("[DEBUG][NodeStageVolume][*csi.NodeStageVolumeRequest.PublishContext] %#+v \n", req.PublishContext)
-	fmt.Printf("[DEBUG][NodeStageVolume][*csi.NodeStageVolumeRequest.VolumeId] %#+v \n", req.VolumeId)
-	fmt.Printf("[DEBUG][NodeStageVolume][*csi.NodeStageVolumeRequest.StagingTargetPath] %#+v \n", req.StagingTargetPath)
-	fmt.Printf("[DEBUG][NodeStageVolume][*csi.NodeStageVolumeRequest.VolumeCapability] %#+v \n", req.VolumeCapability)
-	fmt.Printf("[DEBUG][NodeStageVolume][*csi.NodeStageVolumeRequest.VolumeContext] %#+v \n", req.VolumeContext)
-	fmt.Printf("[DEBUG][NodeStageVolume][*csi.NodeStageVolumeRequest.VolumeCapability.AccessType] %#+v \n", req.VolumeCapability.AccessType)
+	// fmt.Printf("[DEBUG][NodeStageVolume][*csi.NodeStageVolumeRequest.PublishContext] %#+v \n", req.PublishContext)
+	// fmt.Printf("[DEBUG][NodeStageVolume][*csi.NodeStageVolumeRequest.VolumeId] %#+v \n", req.VolumeId)
+	// fmt.Printf("[DEBUG][NodeStageVolume][*csi.NodeStageVolumeRequest.StagingTargetPath] %#+v \n", req.StagingTargetPath)
+	// fmt.Printf("[DEBUG][NodeStageVolume][*csi.NodeStageVolumeRequest.VolumeCapability] %#+v \n", req.VolumeCapability)
+	// fmt.Printf("[DEBUG][NodeStageVolume][*csi.NodeStageVolumeRequest.VolumeContext] %#+v \n", req.VolumeContext)
+	// fmt.Printf("[DEBUG][NodeStageVolume][*csi.NodeStageVolumeRequest.VolumeCapability.AccessType] %#+v \n", req.VolumeCapability.AccessType)
 
 	if req.VolumeId == "" {
 		return nil, status.Error(codes.InvalidArgument, "Required VolumeID")
@@ -49,17 +49,33 @@ func (d *Driver) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRe
 		source = fmt.Sprintf("/dev/disk/by-path/pci-%s", address)
 	}
 
-	isf, err := isNotFormated(source)
-	fmt.Printf("[DEBUG][NodeStageVolume][PRE - Formater] ERROR: %v \n", err)
+	if req.VolumeContext["encrypt"] == "true" {
+		ise, _ := isNotEncrypt(source)
+
+		if ise {
+			err := Encrypter(source)
+			if err != nil {
+				return nil, status.Error(codes.Internal, fmt.Sprintf("Problem Encrypter: %v", err.Error()))
+			}
+		}
+
+		err := OpenLuks(source, req.VolumeId)
+		if err != nil {
+			return nil, status.Error(codes.Internal, fmt.Sprintf("Problem OpenLuks: %v", err.Error()))
+		}
+
+		source = fmt.Sprintf("/dev/mapper/%v", req.VolumeId)
+	}
+
+	isf, _ := isNotFormated(source)
 	if isf {
-		fmt.Printf("[DEBUG][NodeStageVolume][REQUIRED - Formater] \n")
 		err := Formater(fsType, source)
 		if err != nil {
 			return nil, status.Error(codes.Internal, fmt.Sprintf("Problem format: %v", err.Error()))
 		}
 	}
 
-	err = mount(source, target, &mnt.MountFlags)
+	err := mount(source, target, &mnt.MountFlags)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("Problem Mount: %v", err.Error()))
 	}
@@ -72,17 +88,22 @@ func (d *Driver) NodeUnstageVolume(ctx context.Context, req *csi.NodeUnstageVolu
 		return nil, status.Error(codes.Internal, fmt.Sprintf("Problem Mount: %v", err.Error()))
 	}
 
+	err = CloseLuks(req.VolumeId)
+	if err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("Problem CloseLuks: %v", err.Error()))
+	}
+
 	return &csi.NodeUnstageVolumeResponse{}, nil
 }
 func (d *Driver) NodePublishVolume(ctx context.Context, req *csi.NodePublishVolumeRequest) (*csi.NodePublishVolumeResponse, error) {
-	fmt.Printf("[DEBUG][NodePublishVolume][StagingTargetPath] %#+v \n", req.StagingTargetPath)
-	fmt.Printf("[DEBUG][NodePublishVolume][TargetPath       ] %#+v \n", req.TargetPath)
-	fmt.Printf("[DEBUG][NodePublishVolume][Secrets          ] %#+v \n", req.Secrets)
-	fmt.Printf("[DEBUG][NodePublishVolume][VolumeContext    ] %#+v \n", req.VolumeContext)
-	fmt.Printf("[DEBUG][NodePublishVolume][Readonly         ] %#+v \n", req.Readonly)
-	fmt.Printf("[DEBUG][NodePublishVolume][VolumeCapability ] %#+v \n", req.VolumeCapability)
-	fmt.Printf("[DEBUG][NodePublishVolume][PublishContext   ] %#+v \n", req.PublishContext)
-	fmt.Printf("[DEBUG][NodePublishVolume][VolumeId         ] %#+v \n", req.VolumeId)
+	// fmt.Printf("[DEBUG][NodePublishVolume][StagingTargetPath] %#+v \n", req.StagingTargetPath)
+	// fmt.Printf("[DEBUG][NodePublishVolume][TargetPath       ] %#+v \n", req.TargetPath)
+	// fmt.Printf("[DEBUG][NodePublishVolume][Secrets          ] %#+v \n", req.Secrets)
+	// fmt.Printf("[DEBUG][NodePublishVolume][VolumeContext    ] %#+v \n", req.VolumeContext)
+	// fmt.Printf("[DEBUG][NodePublishVolume][Readonly         ] %#+v \n", req.Readonly)
+	// fmt.Printf("[DEBUG][NodePublishVolume][VolumeCapability ] %#+v \n", req.VolumeCapability)
+	// fmt.Printf("[DEBUG][NodePublishVolume][PublishContext   ] %#+v \n", req.PublishContext)
+	// fmt.Printf("[DEBUG][NodePublishVolume][VolumeId         ] %#+v \n", req.VolumeId)
 
 	err := mount(req.StagingTargetPath, req.TargetPath, &[]string{"--bind"})
 	if err != nil {
