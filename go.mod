@@ -4,14 +4,15 @@ go 1.21.6
 
 require (
 	github.com/container-storage-interface/spec v1.9.0
-	github.com/goryszewski/libvirtApi-client v0.0.0-20240619063612-9642fd36bb17
+	github.com/goryszewski/libvirtApi-client v0.0.0-20240707100228-c0479cd881a6
 	google.golang.org/grpc v1.64.0
 	google.golang.org/protobuf v1.33.0
 )
 
+require github.com/sirupsen/logrus v1.9.3
+
 require (
 	github.com/golang/protobuf v1.5.4 // indirect
-	github.com/sirupsen/logrus v1.9.3 // indirect
 	golang.org/x/net v0.22.0 // indirect
 	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect

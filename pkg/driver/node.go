@@ -141,13 +141,13 @@ func (d *Driver) NodeGetCapabilities(ctx context.Context, req *csi.NodeGetCapabi
 	}, nil
 }
 func (d *Driver) NodeGetInfo(ctx context.Context, req *csi.NodeGetInfoRequest) (*csi.NodeGetInfoResponse, error) {
-	nodeID, err := GetIDNode()
+	node, err := d.storage.GetNodeByMetadata()
 	if err != nil {
-		return nil, fmt.Errorf("failed read is %+v \n", err)
+		return nil, fmt.Errorf("problem with Metadata %+v \n", err)
 	}
 
 	return &csi.NodeGetInfoResponse{
-		NodeId:            nodeID + ".autok8s.xyz",
+		NodeId:            node.Name,
 		MaxVolumesPerNode: 5,
 		AccessibleTopology: &csi.Topology{
 			Segments: map[string]string{

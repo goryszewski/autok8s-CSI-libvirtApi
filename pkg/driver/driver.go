@@ -35,16 +35,17 @@ type InputParam struct {
 }
 
 func NewDriver(params InputParam, conf libvirtApiClient.Config) (*Driver, error) {
+	clientStorage, _ := libvirtApiClient.NewClient(conf, &http.Client{Timeout: 10 * time.Second})
 
-	id, err := GetIDNode()
+	node, err := clientStorage.GetNodeByMetadata()
 	if err != nil {
 		return nil, fmt.Errorf("problem with id: %v", err)
 	}
+
 	log := logrus.New().WithFields(logrus.Fields{
-		"host_id": id,
+		"host_id": node.Name,
 	})
 
-	clientStorage, _ := libvirtApiClient.NewClient(conf, &http.Client{Timeout: 10 * time.Second})
 	return &Driver{
 		name:     params.Name,
 		endpoint: params.Endpoint,
