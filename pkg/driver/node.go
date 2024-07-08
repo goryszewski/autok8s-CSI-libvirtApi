@@ -41,41 +41,47 @@ func (d *Driver) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRe
 		fsType = mnt.FsType
 	}
 
-	source := ""
+	source_path := ""
 	target := req.StagingTargetPath
 	if address, ok := req.PublishContext["Address"]; !ok {
 		return nil, status.Error(codes.InvalidArgument, "Required address in  req.PublishContext")
 	} else {
-		source = fmt.Sprintf("/dev/disk/by-path/pci-%s", address)
+		source_path = fmt.Sprintf("/dev/disk/by-path/pci-%s", address)
 	}
 
 	if req.VolumeContext["encrypt"] == "true" {
-		ise, _ := isNotEncrypt(source)
+		not_encrypted, _ := isNotEncrypt(source_path)
 
-		if ise {
-			err := Encrypter(source)
+		if not_encrypted {
+			err := Encrypter(source_path)
 			if err != nil {
 				return nil, status.Error(codes.Internal, fmt.Sprintf("Problem Encrypter: %v", err.Error()))
 			}
+			if req.VolumeContext["tang"] != "false" {
+				err := ClevisBind(source_path, req.VolumeContext["tang"])
+				if err != nil {
+					return nil, status.Error(codes.Internal, fmt.Sprintf("Problem clevis bind: %v", err.Error()))
+				}
+			}
 		}
 
-		err := OpenLuks(source, req.VolumeId)
+		err := OpenLuks(source_path, req.VolumeId)
 		if err != nil {
 			return nil, status.Error(codes.Internal, fmt.Sprintf("Problem OpenLuks: %v", err.Error()))
 		}
 
-		source = fmt.Sprintf("/dev/mapper/%v", req.VolumeId)
+		source_path = fmt.Sprintf("/dev/mapper/%v", req.VolumeId)
 	}
 
-	isf, _ := isNotFormated(source)
-	if isf {
-		err := Formater(fsType, source)
+	not_formated, _ := isNotFormated(source_path)
+	if not_formated {
+		err := Formater(fsType, source_path)
 		if err != nil {
 			return nil, status.Error(codes.Internal, fmt.Sprintf("Problem format: %v", err.Error()))
 		}
 	}
 
-	err := mount(source, target, &mnt.MountFlags)
+	err := mount(source_path, target, &mnt.MountFlags)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("Problem Mount: %v", err.Error()))
 	}

@@ -64,20 +64,6 @@ func Encrypter(source string) error {
 	return nil
 }
 
-func Nbde(path, server string) error {
-	tang := fmt.Sprintf("'{\"url\":\"http://%s\"}'", server)
-
-	cmd := "clevis"
-	arg := []string{"luks", "bind", "-d", path, "tang", tang}
-
-	err := run(cmd, arg)
-	if err != nil {
-		return fmt.Errorf("problem Format: %v", err.Error())
-	}
-
-	return nil
-}
-
 func OpenStatus(name string) (bool, error) {
 	cmd := "cryptsetup"
 	arg := []string{"status", name}

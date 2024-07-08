@@ -41,14 +41,21 @@ func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 
 	d.log.Infof(" requiredBytes:%v | limitBytes:%v | size:%v | size big:%v", requiredBytes, limitBytes, size, int(size/giB))
 
-	vol, err := d.storage.CreateDisk(int(size / giB))
+	gib_size := int(size / giB)
+	// DOTO create disk with pv name
+	// vol, err := d.storage.CreatePV(req.Name, gib_size)
+	vol, err := d.storage.CreateDisk(gib_size)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "Failed provisioning volume")
 	}
 
-	VolumeContext := map[string]string{"encrypt": "false"}
+	VolumeContext := map[string]string{"encrypt": "false", "tang": "false"}
 	if value, ok := req.Parameters["encrypt"]; ok {
 		VolumeContext["encrypt"] = value
+	}
+
+	if value, ok := req.Parameters["tang"]; ok {
+		VolumeContext["tang"] = value
 	}
 
 	return &csi.CreateVolumeResponse{

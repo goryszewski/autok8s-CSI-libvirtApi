@@ -15,7 +15,7 @@ parameters:
   readOnly: "false"
   diskformat: "true"
   encrypt: "true"
-
+  tang_server: tang.autok8s.xyz
 ---
 
 apiVersion: v1
